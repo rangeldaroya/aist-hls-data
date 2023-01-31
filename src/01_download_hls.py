@@ -21,6 +21,7 @@ FAIL_LOG_FP = "../data/failure_indices.txt"
 DATA_DIR = "../data"                            # where data is stored (csv, json reference files)
 DATE_STR_FMT = '%Y-%m-%d'
 OUT_DIR = "/Volumes/R Sandisk SSD/hls_tmp"    # folder where data will be downloaded to
+MAX_THREADS = 4     # when running multiprocessing, this is the max number of concurrently running processes
 
 ssc_json_path = f'{DATA_DIR}/ssc_sample_2573.json'
 # aqsat_path = f'{DATA_DIR}/Aqusat_TSS_v1.csv'
@@ -92,14 +93,19 @@ def process_row(row, json_data, date_str_fmt=DATE_STR_FMT, out_dir=OUT_DIR):
     return f"[{json_key}, {date}]"
 
 
-def process_csv_data(aqsat, json_data, out_dir=OUT_DIR):
-    pool = multiprocessing.Pool()
-    result_async = [
-        pool.apply_async(process_row, args=(aqsat.iloc[i], json_data))
-        for i in range(len(aqsat))
-    ]
-    results = [r.get() for r in result_async]
-    logger.info(f"Finished processing: {results}")
+def process_csv_data(aqsat, json_data, out_dir=OUT_DIR, max_threads=MAX_THREADS):
+    for n in range((len(aqsat)//max_threads)+1):
+        start_idx = max_threads*n
+        end_idx = start_idx+4
+        subset = aqsat.iloc[start_idx:end_idx]
+        
+        pool = multiprocessing.Pool()
+        result_async = [
+            pool.apply_async(process_row, args=(subset.iloc[i], json_data))
+            for i in range(len(subset))
+        ]
+        results = [r.get() for r in result_async]
+        logger.info(f"Finished processing: {results}")
 
 
 if __name__ == "__main__":
