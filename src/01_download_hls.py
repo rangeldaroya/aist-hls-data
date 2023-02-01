@@ -70,6 +70,7 @@ def get_hls_links(json_data, json_key, date, fail_log_fp=FAIL_LOG_FP):
 
 
 def process_row(row, json_data, date_str_fmt=DATE_STR_FMT, out_dir=OUT_DIR):
+    # NOTE: this is the function that can be called in parallel
     lat, long = row["lat"], row["long"]
     json_key = str(long) +','+ str(lat)
 
@@ -94,6 +95,7 @@ def process_row(row, json_data, date_str_fmt=DATE_STR_FMT, out_dir=OUT_DIR):
 
 
 def process_csv_data(aqsat, json_data, out_dir=OUT_DIR, max_threads=MAX_THREADS):
+    # Parallel processing sample
     for n in range((len(aqsat)//max_threads)+1):
         start_idx = max_threads*n
         end_idx = start_idx+4
