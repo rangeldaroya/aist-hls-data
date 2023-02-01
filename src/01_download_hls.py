@@ -25,7 +25,7 @@ MAX_THREADS = 4     # when running multiprocessing, this is the max number of co
 
 ssc_json_path = f'{DATA_DIR}/ssc_sample_2573.json'
 # aqsat_path = f'{DATA_DIR}/Aqusat_TSS_v1.csv'
-aqsat_path = f'{DATA_DIR}/L08_data_exactloc.csv'
+aqsat_path = f'{DATA_DIR}/filtered_data.csv'        # filtered data from 00_filter_csv.py
 s3_cred_endpoint = 'https://data.lpdaac.earthdatacloud.nasa.gov/s3credentials'
 
 
@@ -98,7 +98,7 @@ def process_csv_data(aqsat, json_data, out_dir=OUT_DIR, max_threads=MAX_THREADS)
     # Parallel processing sample
     for n in range((len(aqsat)//max_threads)+1):
         start_idx = max_threads*n
-        end_idx = start_idx+4
+        end_idx = start_idx+max_threads
         subset = aqsat.iloc[start_idx:end_idx]
         
         pool = multiprocessing.Pool()
