@@ -20,10 +20,14 @@ END_IDX = 2  # None means to finish until end (index also starts at 0)
 FAIL_LOG_FP = "../data/failure_indices.txt"
 DATA_DIR = "../data"                            # where data is stored (csv, json reference files)
 DATE_STR_FMT = '%Y-%m-%d'
-OUT_DIR = "/Volumes/R Sandisk SSD/hls_tmp"    # folder where data will be downloaded to
+LAT_COL = "lat"     # column name for latitude
+LON_COL = "long"    # column name for longitude
+SITE_ID_COL = "SiteID"  # column name for Site ID
+# OUT_DIR = "/Volumes/R Sandisk SSD/hls_tmp"    # folder where data will be downloaded to
+OUT_DIR = "../hls_data_tmp"
 MAX_THREADS = 4     # when running multiprocessing, this is the max number of concurrently running processes
 
-ssc_json_path = f'{DATA_DIR}/ssc_sample_2573.json'
+ssc_json_path = f'{DATA_DIR}/checkpoint_197000.json'
 # aqsat_path = f'{DATA_DIR}/Aqusat_TSS_v1.csv'
 aqsat_path = f'{DATA_DIR}/filtered_data.csv'        # filtered data from 00_filter_csv.py
 s3_cred_endpoint = 'https://data.lpdaac.earthdatacloud.nasa.gov/s3credentials'
@@ -58,43 +62,39 @@ def save_hls_data(hls_links, fp_dir_out):
             f.write(r.content)
 
 
-def get_hls_links(json_data, json_key, date, fail_log_fp=FAIL_LOG_FP):
+def get_hls_links(json_data, site_id, date, fail_log_fp=FAIL_LOG_FP):
     try:
-        hls_links = json_data[json_key][date]
+        hls_links = json_data[site_id]["dates"][date]
+        if not isinstance(hls_links, list):
+            logger.error(f"KeyError: [{site_id}, {date}] not found in `json_data`")
+            return []    
     except KeyError:
-        logger.error(f"KeyError: {json_key} not found in `json_data`")
+        logger.error(f"KeyError: [{site_id}, {date}] not found in `json_data`")
         with open(fail_log_fp, "a") as fp:
-            fp.write(f"[{json_key}, {date}]: not found in `json_data`,\n")
+            fp.write(f"[{site_id}, {date}]: not found in `json_data`,\n")
         return [] # return no data
     return hls_links
 
 
-def process_row(row, json_data, date_str_fmt=DATE_STR_FMT, out_dir=OUT_DIR):
+def process_row(row, json_data, out_dir):
     # NOTE: this is the function that can be called in parallel
-    lat, long = row["lat"], row["long"]
-    json_key = str(long) +','+ str(lat)
+    site_id = row[SITE_ID_COL]
 
     # Get all dates, +/-1 day from listed day (including original date)
-    date_orig = row['date']
-    date_obj = datetime.strptime(date_orig, date_str_fmt).date()
-    dates = [
-        datetime.strftime(date_obj - timedelta(x), date_str_fmt)
-        for x in [-1,0,1]
-    ]
+    date = row['date']
     
-    for date in dates:
-        if not os.path.exists(os.path.join(out_dir, json_key)):          # make folder with lat,long as name
-            os.makedirs(os.path.join(out_dir, json_key))
-        if not os.path.exists(os.path.join(out_dir, json_key, date)):    # make folder with date as name
-            os.makedirs(os.path.join(out_dir, json_key, date))
-        hls_links = get_hls_links(json_data, json_key, date)
+    if not os.path.exists(os.path.join(out_dir, site_id)):          # make folder with lat,long as name
+        os.makedirs(os.path.join(out_dir, site_id))
+    if not os.path.exists(os.path.join(out_dir, site_id, date)):    # make folder with date as name
+        os.makedirs(os.path.join(out_dir, site_id, date))
+    hls_links = get_hls_links(json_data, site_id, date)
 
-        fp_dir_out = os.path.join(out_dir, json_key, date)
-        save_hls_data(hls_links, fp_dir_out)
-    return f"[{json_key}, {date}]"
+    fp_dir_out = os.path.join(out_dir, site_id, date)
+    save_hls_data(hls_links, fp_dir_out)
+    return f"[{site_id}, {date}]"
 
 
-def process_csv_data(aqsat, json_data, out_dir=OUT_DIR, max_threads=MAX_THREADS):
+def process_csv_data(aqsat, json_data, out_dir, max_threads):
     # Parallel processing sample
     for n in range((len(aqsat)//max_threads)+1):
         start_idx = max_threads*n
@@ -103,7 +103,7 @@ def process_csv_data(aqsat, json_data, out_dir=OUT_DIR, max_threads=MAX_THREADS)
         
         pool = multiprocessing.Pool()
         result_async = [
-            pool.apply_async(process_row, args=(subset.iloc[i], json_data))
+            pool.apply_async(process_row, args=(subset.iloc[i], json_data, out_dir))
             for i in range(len(subset))
         ]
         results = [r.get() for r in result_async]
@@ -130,4 +130,4 @@ if __name__ == "__main__":
     )
     rio_env.__enter__()
 
-    process_csv_data(aqsat.iloc[START_IDX: END_IDX+1], json_data, OUT_DIR)
+    process_csv_data(aqsat.iloc[START_IDX: END_IDX+1], json_data, OUT_DIR, MAX_THREADS)

@@ -5,3 +5,13 @@
 3. Run code (NOTE: make sure to update the global variables to reflect correct filepaths):
     - `python 00_filter_csv.py`
     - `python 01_download_hls.py`
+
+# Structure of Files
+<OUT_DIR>
+    |--<site_id>
+        |--<date>
+            |--<band1.tiff>
+            |--<band2.tiff>
+            .
+            .
+            |--<bandn.tiff>
