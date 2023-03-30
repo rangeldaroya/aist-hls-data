@@ -9,7 +9,7 @@
 # Structure of Files
 - <OUT_DIR>
     - |--<site_id>
-        - |--<date>
+        - |--date
             - |--<band1.tiff>
             - |--<band2.tiff>
             - .
