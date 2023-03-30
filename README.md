@@ -7,14 +7,14 @@
     - `python 01_download_hls.py`
 
 # Structure of Files
-<OUT_DIR>
-    |--<site_id>
-        |--<date>
-            |--<band1.tiff>
-            |--<band2.tiff>
-            .
-            .
-            |--<bandn.tiff>
+- <OUT_DIR>
+    - |--<site_id>
+        - |--<date>
+            - |--<band1.tiff>
+            - |--<band2.tiff>
+            - .
+            - .
+            - |--<bandn.tiff>
 
 # For running water masking
 Source: https://github.com/isikdogan/deepwatermap
