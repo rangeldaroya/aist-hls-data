@@ -15,3 +15,12 @@
             .
             .
             |--<bandn.tiff>
+
+# For running water masking
+Source: https://github.com/isikdogan/deepwatermap
+1. Download trained model [here](https://drive.google.com/drive/folders/1p8gojc2C9EaKzZ9-kWdUoDgWeiPVqItb?usp=share_link)
+    - place the two `cp.*` files in the `checkpoints` directory
+2. Makes sure all required packages are installed: `pip install -r requirements.txt`
+1. Go to `src` directory: `cd src`
+2. Run: 
+    - `python water_mask.py`
